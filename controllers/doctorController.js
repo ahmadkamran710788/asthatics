@@ -206,23 +206,23 @@ const getUpcomingAppointments = async (req, res) => {
 const getCompletedAppointments = async (req, res) => {
   try {
     const { doctorId } = req.params;
-    
+
     if (!doctorId) {
-      return res.status(400).json({ error: 'Doctor ID is required' });
+      return res.status(400).json({ error: 'Doctor ID is required.' });
     }
-    
+
     const completedAppointments = await Appointment.find({
+      doctorId,
       status: 'completed',
-      doctorId
     }).populate({
       path: 'patientId',
-      select: '_id name email phone'
+      select: '_id name email phone',
     });
-    
-    res.json(completedAppointments);
+
+    return res.status(200).json(completedAppointments);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Error fetching completed appointments:', error);
+    return res.status(500).json({ error: 'Internal server error.' });
   }
 };
 

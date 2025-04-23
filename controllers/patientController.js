@@ -75,7 +75,7 @@ const getAvailableSlots = async (req, res) => {
 // Book an appointment (replaces signup & creates patient if needed)
 const bookAppointment = async (req, res) => {
   try {
-    const { doctorId, date, slot, patientName, patientEmail, patientPhone, medicalHistory } = req.body;
+    const { doctorId, date, slot, patientName, patientEmail, patientPhone, medicalHistory,service } = req.body;
     
     // Validate required fields
     if (!doctorId || !date || !slot || !patientName || !patientEmail || !patientPhone) {
@@ -125,7 +125,8 @@ const bookAppointment = async (req, res) => {
       patientName,
       patientEmail,
       patientPhone,
-      medicalHistory: medicalHistory || ''
+      medicalHistory: medicalHistory || '',
+      service: service
     });
 
     await appointment.save();
@@ -133,6 +134,34 @@ const bookAppointment = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
+const getAllAppointments = async (req, res) => {
+  try {
+    const { patientEmail } = req.body;
+    
+    // Find patient by email
+    const patient = await Patient.findOne({ email: patientEmail });
+    
+    if (!patient) {
+      return res.status(404).json({ error: 'Patient not found' });
+    }
+    
+    // Find upcoming appointments
+    const upcomingAppointments = await Appointment.find({
+      patientId: patient._id
+    
+    }).populate({
+      path: 'doctorId',
+      select: '_id name specialization'
+    });
+    
+    res.json(upcomingAppointments);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -257,5 +286,6 @@ module.exports = {
   getCompletedAppointments,
   getPrescription,
   addReview,
-  getDoctorReviews
+  getDoctorReviews,
+  getAllAppointments
 };

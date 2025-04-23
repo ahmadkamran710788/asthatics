@@ -12,6 +12,7 @@ router.get('/get-available-slots/:doctorId/:date', patientController.getAvailabl
 router.post('/book-appointment', patientController.bookAppointment);
 
 // Appointment management routes
+router.post('/all-appointments', patientController.getAllAppointments);
 router.post('/upcoming-appointments', patientController.getUpcomingAppointments);
 router.post('/completed-appointments', patientController.getCompletedAppointments);
 router.get('/get-prescription/:id', patientController.getPrescription);
