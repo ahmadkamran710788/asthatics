@@ -4,7 +4,7 @@ const DBconnections = async () => {
   try {
     mongoose
       .connect(
-        "mongodb://localhost:27017/aesthetic-website",
+        "mongodb+srv://amjadhasi009:3YodDQdjJ97Qw9vc@cluster0.qb2ns.mongodb.net/aesthetic?retryWrites=true&w=majority&appName=Cluster0",
       )
       .then(() => {
         // console.log(process.env.FRONTEND_URL);

@@ -341,7 +341,7 @@ const getAppointmentStats = async (req, res) => {
   try {
     const totalAppointments = await Appointment.countDocuments();
     const completedAppointments = await Appointment.countDocuments({ status: 'completed' });
-    const cancelledAppointments = await Appointment.countDocuments({ status: 'rejected' });
+    const cancelledAppointments = await Appointment.countDocuments({ status: 'reject' });
 
     res.status(200).json({
       totalAppointments,
