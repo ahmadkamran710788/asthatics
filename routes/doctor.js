@@ -32,4 +32,5 @@ router.get('/get-appointment-review/:id',verifyToken, doctorController.getAppoin
 router.get('/all-reviews/:id',verifyToken, doctorController.getAllDoctorReviews);
 router.get('/:doctorId/average-rating',verifyToken, doctorController.calculateAverageRating);
 router.get('/appointment/patient/:patientId',verifyToken,doctorController.getAppointmentsByPatient)
+router.get('/appointment-stat',verifyToken,doctorController.getAppointmentStats)
 module.exports = router;

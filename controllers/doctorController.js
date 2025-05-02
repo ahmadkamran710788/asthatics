@@ -337,7 +337,22 @@ const calculateAverageRating = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+const getAppointmentStats = async (req, res) => {
+  try {
+    const totalAppointments = await Appointment.countDocuments();
+    const completedAppointments = await Appointment.countDocuments({ status: 'completed' });
+    const cancelledAppointments = await Appointment.countDocuments({ status: 'rejected' });
 
+    res.status(200).json({
+      totalAppointments,
+      completedAppointments,
+      cancelledAppointments
+    });
+  } catch (error) {
+    console.error('Error fetching appointment stats:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
 
 const getAppointmentsByPatient = async (req, res) => {
   const { patientId } = req.params;
@@ -382,5 +397,6 @@ module.exports = {
   getAppointmentReview,
   getAllDoctorReviews,
   calculateAverageRating,
-  getAppointmentsByPatient
+  getAppointmentsByPatient,
+  getAppointmentStats
 };
