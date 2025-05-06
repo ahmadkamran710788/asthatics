@@ -13,7 +13,7 @@ const App = async (app) => {
   app.use(bodyParser.urlencoded({ limit: "1gb", extended: true }));
   app.use(
     cors({
-      origin: process.env.FRONTEND_URL || "https://16.170.56.82:3000",
+      origin: "*",
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],

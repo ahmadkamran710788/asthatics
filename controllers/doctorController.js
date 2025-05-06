@@ -250,13 +250,18 @@ const updateAppointmentStatus = async (req, res) => {
 const addPrescription = async (req, res) => {
   try {
     const { patient, doctor, appointment, prescription } = req.body;
-    
+    const formattedPrescription = prescription.map(item => ({
+      medicineName: item.medicine, // Convert from 'medicine' to 'medicineName'
+      dosage: item.dosage,
+      directions: item.instructions, // Convert from 'instructions' to 'directions'
+      duration: item.duration || "" // Add default empty value if not provided
+    }));
     // Create a new Prescription document
     const newPrescription = new Prescription({
       patient,
       doctor,
       appointment,
-      prescription,
+      formattedPrescription,
     });
 
     // Save the new prescription to the database
@@ -284,6 +289,7 @@ const getPrescription = async (req, res) => {
     if (!prescription) {
       return res.status(404).json({ message: 'Prescription not found for the given appointment ID' });
     }
+    console.log(prescription);
     
     res.json(prescription);
   } catch (error) {
@@ -381,6 +387,23 @@ const getAppointmentsByPatient = async (req, res) => {
       });
   }
 };
+
+
+// const getPrescription = async (req, res) => {
+//   try {
+//     const id = req.params.id;
+//     const prescription = await Prescription.findOne({ appointment: id });
+    
+//     if (!prescription) {
+//       return res.status(404).json({ message: 'Prescription not found for the given appointment ID' });
+//     }
+    
+//     res.json(prescription);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: 'Internal server error' });
+//   }
+// };
 module.exports = {
   signin,
   validateToken,
