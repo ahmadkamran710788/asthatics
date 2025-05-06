@@ -1,14 +1,14 @@
 // controllers/doctorController.js
-const Doctor = require('../model/doctor');
-const Appointment = require('../model/appointment');
-const Prescription = require('../model/prescription');
-const Review = require('../model/review');
-const validator = require('validator');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const Doctor = require("../model/doctor");
+const Appointment = require("../model/appointment");
+const Prescription = require("../model/prescription");
+const Review = require("../model/review");
+const validator = require("validator");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 // const Otp = require('../models/otp');
-const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 
 // Doctor Authentication
 const signin = async (req, res) => {
@@ -19,19 +19,21 @@ const signin = async (req, res) => {
     if (!email || !validator.isEmail(email)) {
       return res.status(400).json({ msg: "Invalid email format." });
     }
-    
+
     const existingDoctor = await Doctor.findOne({ email });
-    
+
     if (!existingDoctor) {
-      return res.status(400).json({ msg: "Doctor with this email does not exist" });
+      return res
+        .status(400)
+        .json({ msg: "Doctor with this email does not exist" });
     }
-    
+
     const isMatch = await bcrypt.compare(password, existingDoctor.password);
-    
+
     if (!isMatch) {
       return res.status(400).json({ msg: "Incorrect password" });
     }
-    
+
     const token = jwt.sign({ id: existingDoctor._id }, "passwordKey");
     res.json({ token, ...existingDoctor._doc });
   } catch (e) {
@@ -41,10 +43,10 @@ const signin = async (req, res) => {
 
 const validateToken = async (req, res) => {
   try {
-    const token = req.header('x-auth-token');
+    const token = req.header("x-auth-token");
     if (!token) return res.json(false);
-    
-    const verified = jwt.verify(token, 'passwordKey');
+
+    const verified = jwt.verify(token, "passwordKey");
     if (!verified) return res.json(false);
 
     const doctor = await Doctor.findById(verified.id);
@@ -65,15 +67,13 @@ const getDoctorData = async (req, res) => {
   }
 };
 
-
-
 // Doctor Profile
 const editProfile = async (req, res) => {
   const { id, name, description, phone } = req.body;
 
   const doctor = await Doctor.findOne({ _id: id });
   if (!doctor) {
-    return res.status(404).json({ message: 'Doctor not found' });
+    return res.status(404).json({ message: "Doctor not found" });
   }
 
   doctor.name = name;
@@ -88,73 +88,75 @@ const editProfile = async (req, res) => {
 const updateAvailabilitySlots = async (req, res) => {
   try {
     const { doctorId, date, slots } = req.body;
-    
+
     // Validate the data
     if (!doctorId || !date || !Array.isArray(slots)) {
-      return res.status(400).json({ error: 'Invalid input data' });
+      return res.status(400).json({ error: "Invalid input data" });
     }
-    
+
     // Format date as YYYY-MM-DD
-    const formattedDate = new Date(date).toISOString().split('T')[0];
-    
+    const formattedDate = new Date(date).toISOString().split("T")[0];
+
     // Find the doctor
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) {
-      return res.status(404).json({ error: 'Doctor not found' });
+      return res.status(404).json({ error: "Doctor not found" });
     }
-    
+
     // Validate each slot format (should be "HH:MM-HH:MM" representing 45-minute slots)
-    const validSlots = slots.filter(slot => {
-      const [start, end] = slot.split('-');
-      return /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(start) && 
-             /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(end);
+    const validSlots = slots.filter((slot) => {
+      const [start, end] = slot.split("-");
+      return (
+        /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(start) &&
+        /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(end)
+      );
     });
-    
+
     // Update the availability for the specified date
     doctor.availabilitySlots.set(formattedDate, validSlots);
     await doctor.save();
-    
-    res.status(200).json({ 
-      message: 'Availability updated successfully',
+
+    res.status(200).json({
+      message: "Availability updated successfully",
       date: formattedDate,
-      slots: validSlots
+      slots: validSlots,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
 const getAvailabilitySlots = async (req, res) => {
   try {
     const { doctorId, date } = req.query;
-    
+
     if (!doctorId) {
-      return res.status(400).json({ error: 'Doctor ID is required' });
+      return res.status(400).json({ error: "Doctor ID is required" });
     }
-    
+
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) {
-      return res.status(404).json({ error: 'Doctor not found' });
+      return res.status(404).json({ error: "Doctor not found" });
     }
-    
+
     // If date is provided, return slots for that date
     if (date) {
-      const formattedDate = new Date(date).toISOString().split('T')[0];
+      const formattedDate = new Date(date).toISOString().split("T")[0];
       const slots = doctor.availabilitySlots.get(formattedDate) || [];
       return res.status(200).json({ date: formattedDate, slots });
     }
-    
+
     // Otherwise, return all availability data
     const availabilityData = {};
     for (const [date, slots] of doctor.availabilitySlots.entries()) {
       availabilityData[date] = slots;
     }
-    
+
     res.status(200).json({ availabilityData });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -164,42 +166,43 @@ const getDoctorAppointments = async (req, res) => {
     const { doctorId } = req.params;
 
     if (!doctorId) {
-      return res.status(400).json({ error: 'Doctor ID is required' });
+      return res.status(400).json({ error: "Doctor ID is required" });
     }
 
-    const appointments = await Appointment.find({ doctorId })
-      .populate({
-        path: 'patientId',
-        select: '_id name email phone'
-      });
+    const appointments = await Appointment.find({ doctorId }).populate({
+      path: "patientId",
+      select: "_id name email phone",
+    });
 
     res.status(200).json(appointments);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'An error occurred while fetching appointments.' });
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching appointments." });
   }
 };
 
 const getUpcomingAppointments = async (req, res) => {
   try {
     const { doctorId } = req.params;
-    
+
     if (!doctorId) {
-      return res.status(400).json({ error: 'Doctor ID is required' });
+      return res.status(400).json({ error: "Doctor ID is required" });
     }
-    
+
     const upcomingAppointments = await Appointment.find({
-      status: 'pending',
-      doctorId
+      status: "pending",
+      doctorId,
     }).populate({
-      path: 'patientId',
-      select: '_id name email phone'
+      path: "patientId",
+      select: "_id name email phone",
     });
-    
+
     res.json(upcomingAppointments);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -208,21 +211,21 @@ const getCompletedAppointments = async (req, res) => {
     const { doctorId } = req.params;
 
     if (!doctorId) {
-      return res.status(400).json({ error: 'Doctor ID is required.' });
+      return res.status(400).json({ error: "Doctor ID is required." });
     }
 
     const completedAppointments = await Appointment.find({
       doctorId,
-      status: 'completed',
+      status: "completed",
     }).populate({
-      path: 'patientId',
-      select: '_id name email phone',
+      path: "patientId",
+      select: "_id name email phone",
     });
 
     return res.status(200).json(completedAppointments);
   } catch (error) {
-    console.error('Error fetching completed appointments:', error);
-    return res.status(500).json({ error: 'Internal server error.' });
+    console.error("Error fetching completed appointments:", error);
+    return res.status(500).json({ error: "Internal server error." });
   }
 };
 
@@ -237,47 +240,92 @@ const updateAppointmentStatus = async (req, res) => {
     );
 
     if (!appointment) {
-      return res.status(404).json({ error: 'Appointment not found' });
+      return res.status(404).json({ error: "Appointment not found" });
     }
 
     res.json(appointment);
   } catch (error) {
-    res.status(500).json({ error: 'An error occurred while updating the appointment status.' });
+    res.status(500).json({
+      error: "An error occurred while updating the appointment status.",
+    });
   }
 };
 
 // Prescription Management
+// const addPrescription = async (req, res) => {
+//   try {
+//     const { patient, doctor, appointment, prescription } = req.body;
+//     const formattedPrescription = prescription.map(item => ({
+//       medicineName: item.medicine, // Convert from 'medicine' to 'medicineName'
+//       dosage: item.dosage,
+//       directions: item.instructions, // Convert from 'instructions' to 'directions'
+//       duration: item.duration || "" // Add default empty value if not provided
+//     }));
+//     // Create a new Prescription document
+//     const newPrescription = new Prescription({
+//       patient,
+//       doctor,
+//       appointment,
+//       formattedPrescription,
+//     });
+
+//     // Save the new prescription to the database
+//     await newPrescription.save();
+
+//     // Update the appointment status to 'completed'
+//     const updatedAppointment = await Appointment.findByIdAndUpdate(
+//       appointment,
+//       { status: 'completed' },
+//       { new: true }
+//     );
+
+//     res.status(200).json({ message: 'Prescription added successfully' });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: 'An error occurred while adding the prescription' });
+//   }
+// };
 const addPrescription = async (req, res) => {
   try {
     const { patient, doctor, appointment, prescription } = req.body;
-    const formattedPrescription = prescription.map(item => ({
+
+    // Transform prescription data to match schema
+    const formattedPrescription = prescription.map((item) => ({
       medicineName: item.medicine, // Convert from 'medicine' to 'medicineName'
       dosage: item.dosage,
       directions: item.instructions, // Convert from 'instructions' to 'directions'
-      duration: item.duration || "" // Add default empty value if not provided
+      duration: item.duration || "", // Add default empty value if not provided
     }));
-    // Create a new Prescription document
+
+    // Create a new Prescription document with properly formatted data
     const newPrescription = new Prescription({
-      patient,
-      doctor,
-      appointment,
-      formattedPrescription,
+      patient, // Make sure this is a string ID
+      doctor, // This should be an ObjectId
+      appointment, // This should be an ObjectId
+      prescription: formattedPrescription,
     });
 
     // Save the new prescription to the database
-    await newPrescription.save();
+    const savedPrescription = await newPrescription.save();
+    console.log("Saved prescription:", savedPrescription);
 
     // Update the appointment status to 'completed'
     const updatedAppointment = await Appointment.findByIdAndUpdate(
       appointment,
-      { status: 'completed' },
+      { status: "completed" },
       { new: true }
     );
 
-    res.status(200).json({ message: 'Prescription added successfully' });
+    res.status(201).json({
+      message: "Prescription added successfully",
+      prescription: savedPrescription,
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'An error occurred while adding the prescription' });
+    console.error("Error adding prescription:", error);
+    res.status(500).json({
+      error: "An error occurred while adding the prescription",
+      details: error.message,
+    });
   }
 };
 
@@ -285,16 +333,18 @@ const getPrescription = async (req, res) => {
   try {
     const id = req.params.id;
     const prescription = await Prescription.findOne({ appointment: id });
-    
+
     if (!prescription) {
-      return res.status(404).json({ message: 'Prescription not found for the given appointment ID' });
+      return res.status(404).json({
+        message: "Prescription not found for the given appointment ID",
+      });
     }
     console.log(prescription);
-    
+
     res.json(prescription);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -305,7 +355,7 @@ const getAppointmentReview = async (req, res) => {
     res.json(reviews);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -315,48 +365,55 @@ const getAllDoctorReviews = async (req, res) => {
     res.status(200).json(reviews);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
 const calculateAverageRating = async (req, res) => {
   try {
     const doctorId = req.params.doctorId;
-    
+
     // Fetch all reviews for the specified doctor
     const reviews = await Review.find({ doctor: doctorId });
-    
+
     if (reviews.length === 0) {
       return res.json({ averageRating: 0 });
     }
-    
+
     // Calculate the average star rating
-    const totalStars = reviews.reduce((sum, review) => sum + parseInt(review.stars), 0);
+    const totalStars = reviews.reduce(
+      (sum, review) => sum + parseInt(review.stars),
+      0
+    );
     const averageRating = Math.round(totalStars / reviews.length);
-    
+
     // Update the Doctor model with the calculated average rating
     await Doctor.findByIdAndUpdate(doctorId, { $set: { star: averageRating } });
-    
+
     res.json({ averageRating });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 const getAppointmentStats = async (req, res) => {
   try {
     const totalAppointments = await Appointment.countDocuments();
-    const completedAppointments = await Appointment.countDocuments({ status: 'completed' });
-    const cancelledAppointments = await Appointment.countDocuments({ status: 'reject' });
+    const completedAppointments = await Appointment.countDocuments({
+      status: "completed",
+    });
+    const cancelledAppointments = await Appointment.countDocuments({
+      status: "reject",
+    });
 
     res.status(200).json({
       totalAppointments,
       completedAppointments,
-      cancelledAppointments
+      cancelledAppointments,
     });
   } catch (error) {
-    console.error('Error fetching appointment stats:', error);
-    res.status(500).json({ error: 'Server error' });
+    console.error("Error fetching appointment stats:", error);
+    res.status(500).json({ error: "Server error" });
   }
 };
 
@@ -364,40 +421,39 @@ const getAppointmentsByPatient = async (req, res) => {
   const { patientId } = req.params;
 
   try {
-      const appointments = await Appointment.find({ patientId })
-          .populate('doctorId', 'name email specialization') // Optional: populate doctor info
-          .sort({ date: -1 }); // Sort by newest first
+    const appointments = await Appointment.find({ patientId })
+      .populate("doctorId", "name email specialization") // Optional: populate doctor info
+      .sort({ date: -1 }); // Sort by newest first
 
-      if (!appointments.length) {
-          return res.status(404).json({
-              success: false,
-              message: 'No appointments found for this patient.',
-          });
-      }
-
-      res.status(200).json({
-          success: true,
-          appointments,
+    if (!appointments.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No appointments found for this patient.",
       });
+    }
+
+    res.status(200).json({
+      success: true,
+      appointments,
+    });
   } catch (error) {
-      console.error('Error fetching appointments:', error);
-      res.status(500).json({
-          success: false,
-          message: 'Something went wrong. Please try again later.',
-      });
+    console.error("Error fetching appointments:", error);
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong. Please try again later.",
+    });
   }
 };
-
 
 // const getPrescription = async (req, res) => {
 //   try {
 //     const id = req.params.id;
 //     const prescription = await Prescription.findOne({ appointment: id });
-    
+
 //     if (!prescription) {
 //       return res.status(404).json({ message: 'Prescription not found for the given appointment ID' });
 //     }
-    
+
 //     res.json(prescription);
 //   } catch (error) {
 //     console.error(error);
@@ -421,5 +477,5 @@ module.exports = {
   getAllDoctorReviews,
   calculateAverageRating,
   getAppointmentsByPatient,
-  getAppointmentStats
+  getAppointmentStats,
 };
